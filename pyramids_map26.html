@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉萨金字塔景区地图</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            background-color: #f5f5f5;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-container img {
+            transform: rotate(-90deg);
+            max-width: 95vh;  /* 从90vh增加到95vh */
+            max-height: 95vw; /* 从90vw增加到95vw */
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .audio-player {
+            position: fixed;
+            top: calc(50% + 155px);
+            right: -150px;            /* 从-135px改为-150px */
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            width: 420px;
+            transform: rotate(-90deg) translate(50%, -50%);
+            transform-origin: center;
+        }
+
+        .audio-player.show {
+            display: block !important;
+        }
+
+        .audio-player audio {
+            display: none;
+            width: 216px;             /* 从180px增加20%到216px */
+            height: 32px;
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        /* 隐藏除播放/暂停和进度条之外的所有控制按钮 */
+        .audio-player audio::-webkit-media-controls-enclosure {
+            border-radius: 4px;
+            background: white;
+        }
+
+        .audio-player audio::-webkit-media-controls-panel {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            padding: 0 5px !important;
+            background: white !important;
+        }
+
+        /* 隐藏不需要的控制按钮 */
+        .audio-player audio::-webkit-media-controls-volume-slider,
+        .audio-player audio::-webkit-media-controls-mute-button,
+        .audio-player audio::-webkit-media-controls-volume-control-container,
+        .audio-player audio::-webkit-media-controls-volume-control,
+        .audio-player audio::-webkit-media-controls-current-time-display,
+        .audio-player audio::-webkit-media-controls-time-remaining-display,
+        .audio-player audio::-webkit-media-controls-seek-back-button,
+        .audio-player audio::-webkit-media-controls-seek-forward-button,
+        .audio-player audio::-webkit-media-controls-fullscreen-button,
+        .audio-player audio::-webkit-media-controls-rewind-button,
+        .audio-player audio::-webkit-media-controls-return-to-realtime-button,
+        .audio-player audio::-webkit-media-controls-toggle-closed-captions-button,
+        .audio-player audio::-webkit-media-controls-playback-rate-button,
+        .audio-player audio::-webkit-media-controls-overflow-button,
+        .audio-player audio::-webkit-media-controls-overflow-menu-list {
+            display: none !important;
+            width: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* 显示播放/暂停按钮和进度条 */
+        .audio-player audio::-webkit-media-controls-play-button,
+        .audio-player audio::-webkit-media-controls-timeline,
+        .audio-player audio::-webkit-media-controls-current-time-container,
+        .audio-player audio::-webkit-media-controls-time-remaining-container,
+        .audio-player audio::-webkit-media-controls-timeline-container {
+            display: flex !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+
+        .audio-player audio.active {
+            display: inline-block;
+        }
+
+        .audio-title {
+            font-size: 11px;
+            color: #333;
+            margin: 0;
+            padding-right: 10px;
+            text-align: right;
+            font-weight: bold;
+            white-space: normal;
+            overflow: visible;
+            line-height: 1.2;
+            width: 180px;             /* 从150px增加20%到180px */
+            display: inline-block;
+            vertical-align: middle;
+            word-break: break-all;
+        }
+
+        /* 卡夫拉金字塔点击区域样式 */
+        .clickable-marker {
+            position: absolute;
+            background-color: rgba(255, 0, 0, 0.3);
+            border: 2px solid red;
+            border-radius: 50%;
+            width: 28px;  /* 从40px缩小到70%: 40px * 0.7 = 28px */
+            height: 28px; /* 从40px缩小到70%: 40px * 0.7 = 28px */
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 卡夫拉金字塔标记点定位 */
+        .khafre-marker {
+            /* 使用百分比定位替代固定像素值 */
+            /* 位置会随着容器大小变化而自动调整 */
+            left: 39.8%;  /* 水平位置：从40.5%减少到39.8%，向左移动约3px */
+            top: 53%;     /* 垂直位置：从52%增加到53%，向下移动约5px */
+        }
+        
+        /* 古夫金字塔标记点定位 */
+        .khufu-marker {
+            left: 29%;    /* 从33%再向左移动约20px，减少4% */
+            top: 37%;     /* 保持垂直位置不变 */
+            background-color: rgba(0, 150, 255, 0.3); /* 蓝色背景 */
+            border: 2px solid blue; /* 蓝色边框 */
+        }
+        
+        /* 狮身人面像标记点定位 */
+        .sphinx-marker {
+            left: 57%;    /* 水平位置使用百分比，调整到更靠右的位置 */
+            top: 25%;     /* 垂直位置使用百分比，向上移动约200px */
+            background-color: rgba(0, 180, 0, 0.3); /* 绿色背景 */
+            border: 2px solid green; /* 绿色边框 */
+        }
+        
+        /* 孟卡拉金字塔标记点定位 */
+        .menkaure-marker {
+            left: 57%;    /* 水平位置使用百分比，向右移动约150px */
+            top: 62%;     /* 垂直位置使用百分比，向上移动约20px */
+            background-color: rgba(180, 0, 180, 0.3); /* 紫色背景 */
+            border: 2px solid purple; /* 紫色边框 */
+        }
+        
+        .clickable-marker::after {
+            content: " ";
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+        }
+
+        /* 针对不同浏览器的特定修复 */
+        @supports (-webkit-touch-callout: none) {
+            /* iOS Safari 特定调整 */
+            .khafre-marker {
+                left: 42.8%;  /* 从43.5%减少到42.8%，向左移动约3px */
+                top: 51%;     /* 从50%增加到51%，向下移动约5px */
+            }
+            
+            .khufu-marker {
+                left: 32%;    /* 从36%再向左移动约20px，减少4% */
+                top: 35%;     /* 保持垂直位置不变 */
+            }
+            
+            .sphinx-marker {
+                left: 60%;    /* iOS Safari下的水平位置调整 */
+                top: 23%;     /* iOS Safari下的垂直位置调整，向上移动约200px */
+            }
+            
+            .menkaure-marker {
+                left: 60%;    /* iOS Safari下的水平位置调整，向右移动约150px */
+                top: 60%;     /* iOS Safari下的垂直位置调整，向上移动约20px */
+            }
+        }
+
+        @supports (-webkit-appearance: none) and (not (-webkit-touch-callout: none)) {
+            /* Chrome, Edge 等 Chromium 浏览器特定调整 */
+            .khafre-marker {
+                left: 37.8%;  /* 从38.5%减少到37.8%，向左移动约3px */
+                top: 55%;     /* 从54%增加到55%，向下移动约5px */
+            }
+            
+            .khufu-marker {
+                left: 27%;    /* 从31%再向左移动约20px，减少4% */
+                top: 39%;     /* 保持垂直位置不变 */
+            }
+            
+            .sphinx-marker {
+                left: 55%;    /* Chrome浏览器下的水平位置调整 */
+                top: 27%;     /* Chrome浏览器下的垂直位置调整，向上移动约200px */
+            }
+            
+            .menkaure-marker {
+                left: 55%;    /* Chrome浏览器下的水平位置调整，向右移动约150px */
+                top: 64%;     /* Chrome浏览器下的垂直位置调整，向上移动约20px */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .map-container img {
+                max-width: 95vh;
+                max-height: 95vw;
+            }
+            
+            .audio-player {
+                width: 384px;
+                right: -170px;        /* 从-155px改为-170px */
+                top: calc(50% + 155px);
+                padding: 10px;
+            }
+
+            .audio-player audio {
+                width: 192px;         /* 从160px增加20%到192px */
+                min-width: 192px;     /* 从160px增加20%到192px */
+            }
+
+            .audio-title {
+                font-size: 10px;
+                width: 168px;         /* 从140px增加20%到168px */
+                line-height: 1.1;
+            }
+            
+            /* 移动端下标记点的尺寸调整 */
+            .clickable-marker {
+                width: 21px;  /* 从30px缩小到70%: 30px * 0.7 = 21px */
+                height: 21px; /* 从30px缩小到70%: 30px * 0.7 = 21px */
+            }
+            
+            .clickable-marker::after {
+                font-size: 10px;
+            }
+        }
+    </style>
+    <script>
+        function stopAllAudio() {
+            var audios = document.querySelectorAll('.audio-player audio');
+            audios.forEach(function(audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.classList.remove('active');
+            });
+            document.getElementById('audioPlayer').classList.remove('show');
+            document.getElementById('audioTitle').textContent = '';
+        }
+
+        function playKhafraAudio() {
+            stopAllAudio();
+            var audio = document.getElementById('khafraAudio');
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            audio.classList.add('active');
+            title.textContent = '正在播放：卡夫拉金字塔语音讲解';
+            audio.play();
+        }
+        
+        function playKhufuAudio() {
+            stopAllAudio();
+            var audio = document.getElementById('khufuAudio');
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            audio.classList.add('active');
+            title.textContent = '正在播放：古夫金字塔语音讲解';
+            audio.play();
+        }
+        
+        function playSphinxAudio() {
+            stopAllAudio();
+            var audio = document.getElementById('sphinxAudio');
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            audio.classList.add('active');
+            title.textContent = '正在播放：狮身人面像语音讲解';
+            audio.play();
+        }
+        
+        function playMenkaureAudio() {
+            stopAllAudio();
+            var audio = document.getElementById('menkaureAudio');
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            audio.classList.add('active');
+            title.textContent = '正在播放：孟卡拉金字塔语音讲解';
+            audio.play();
+        }
+
+        function startBackgroundMusic() {
+            var bgm = document.getElementById('backgroundMusic');
+            bgm.muted = false;
+            bgm.play();
+        }
+
+        window.onload = function() {
+            var gizaAudio = document.getElementById('gizaAudio');
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            gizaAudio.classList.add('active');
+            title.textContent = '正在播放：吉萨金字塔语音讲解';
+            gizaAudio.play();
+            
+            // 自动播放狮身人面像语音讲解
+            setTimeout(function() {
+                playMenkaureAudio();
+            }, 500);
+            
+            // 添加点击事件监听，使图片的整个区域都可点击
+            document.querySelector('.map-container').addEventListener('click', function(e) {
+                // 获取点击的位置
+                var clickX = e.clientX;
+                var clickY = e.clientY;
+                
+                // 获取卡夫拉金字塔标记的位置
+                var khafraMarker = document.querySelector('.khafre-marker');
+                var khafraRect = khafraMarker.getBoundingClientRect();
+                var khafraX = khafraRect.left + khafraRect.width / 2;
+                var khafraY = khafraRect.top + khafraRect.height / 2;
+                
+                // 获取古夫金字塔标记的位置
+                var khufuMarker = document.querySelector('.khufu-marker');
+                var khufuRect = khufuMarker.getBoundingClientRect();
+                var khufuX = khufuRect.left + khufuRect.width / 2;
+                var khufuY = khufuRect.top + khufuRect.height / 2;
+                
+                // 获取狮身人面像标记的位置
+                var sphinxMarker = document.querySelector('.sphinx-marker');
+                var sphinxRect = sphinxMarker.getBoundingClientRect();
+                var sphinxX = sphinxRect.left + sphinxRect.width / 2;
+                var sphinxY = sphinxRect.top + sphinxRect.height / 2;
+                
+                // 获取孟卡拉金字塔标记的位置
+                var menkaureMarker = document.querySelector('.menkaure-marker');
+                var menkaureRect = menkaureMarker.getBoundingClientRect();
+                var menkaureX = menkaureRect.left + menkaureRect.width / 2;
+                var menkaureY = menkaureRect.top + menkaureRect.height / 2;
+                
+                // 计算点击位置与卡夫拉标记位置的距离
+                var khafraDistance = Math.sqrt(Math.pow(clickX - khafraX, 2) + Math.pow(clickY - khafraY, 2));
+                
+                // 计算点击位置与古夫标记位置的距离
+                var khufuDistance = Math.sqrt(Math.pow(clickX - khufuX, 2) + Math.pow(clickY - khufuY, 2));
+                
+                // 计算点击位置与狮身人面像标记位置的距离
+                var sphinxDistance = Math.sqrt(Math.pow(clickX - sphinxX, 2) + Math.pow(clickY - sphinxY, 2));
+                
+                // 计算点击位置与孟卡拉标记位置的距离
+                var menkaureDistance = Math.sqrt(Math.pow(clickX - menkaureX, 2) + Math.pow(clickY - menkaureY, 2));
+                
+                // 如果距离小于42像素(放宽点击区域)，触发点击事件
+                if (khafraDistance < 42) {
+                    playKhafraAudio();
+                } else if (khufuDistance < 42) {
+                    playKhufuAudio();
+                } else if (sphinxDistance < 42) {
+                    playSphinxAudio();
+                } else if (menkaureDistance < 42) {
+                    playMenkaureAudio();
+                }
+                
+                // 在用户首次点击时启动背景音乐
+                startBackgroundMusic();
+            });
+        }
+    </script>
+</head>
+<body>
+    <audio id="backgroundMusic" muted loop>
+        <source src="bgm.mp3" type="audio/mpeg">
+    </audio>
+    <div class="map-container">
+        <div id="audioPlayer" class="audio-player">
+            <div id="audioTitle" class="audio-title"></div>
+            <audio id="gizaAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="吉萨金字塔语音讲解.mp3" type="audio/mpeg">  
+            </audio>
+            <audio id="khafraAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="卡夫拉金字塔语音讲解.mp3" type="audio/mpeg">  
+            </audio>
+            <audio id="khufuAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="古夫金字塔语音讲解.mp3" type="audio/mpeg">  
+            </audio>
+            <audio id="sphinxAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="狮身人面像语音讲解.mp3" type="audio/mpeg">  
+            </audio>
+            <audio id="menkaureAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="孟卡拉金字塔语音讲解.mp3" type="audio/mpeg">  
+            </audio>
+        </div>
+        <img src="金字塔景区地区.jpg" alt="吉萨金字塔景区地图" usemap="#pyramids-map">
+        <!-- 添加明显的金字塔点击标记，使用百分比定位 -->
+        <div class="clickable-marker khafre-marker" onclick="playKhafraAudio()"></div>
+        <div class="clickable-marker khufu-marker" onclick="playKhufuAudio()"></div>
+        <div class="clickable-marker sphinx-marker" onclick="playSphinxAudio()"></div>
+        <div class="clickable-marker menkaure-marker" onclick="playMenkaureAudio()"></div>
+        <map name="pyramids-map">
+            <area shape="rect" 
+                  coords="600,370,780,430" 
+                  href="javascript:void(0);"
+                  onclick="playKhafraAudio()" 
+                  alt="卡夫拉金字塔">
+            <area shape="rect" 
+                  coords="680,40,860,100" 
+                  href="javascript:void(0);"
+                  onclick="playSphinxAudio()" 
+                  alt="狮身人面像">
+            <area shape="rect" 
+                  coords="750,480,930,540" 
+                  href="javascript:void(0);"
+                  onclick="playMenkaureAudio()" 
+                  alt="孟卡拉金字塔">
+        </map>
+    </div>
+</body>
+</html>
