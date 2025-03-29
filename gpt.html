@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉萨金字塔景区地图</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            background-color: #f5f5f5;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-container img {
+            transform: rotate(-90deg);
+            max-width: 95vh;
+            max-height: 95vw;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .audio-player {
+            position: fixed;
+            top: calc(50% + 155px);
+            right: -150px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            width: 420px;
+            transform: rotate(-90deg) translate(50%, -50%);
+            transform-origin: center;
+        }
+
+        .audio-player.show {
+            display: block !important;
+        }
+
+        .audio-player audio {
+            display: none;
+            width: 216px;
+            height: 32px;
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        .audio-player audio::-webkit-media-controls-panel {
+            display: flex !important;
+            background: white !important;
+            padding: 0 5px !important;
+        }
+
+        .audio-player audio::-webkit-media-controls-play-button,
+        .audio-player audio::-webkit-media-controls-timeline {
+            display: flex !important;
+            flex: 1 !important;
+        }
+
+        .audio-title {
+            font-size: 11px;
+            color: #333;
+            margin: 0;
+            padding-right: 10px;
+            text-align: right;
+            font-weight: bold;
+            white-space: normal;
+            overflow: visible;
+            line-height: 1.2;
+            width: 180px;
+            display: inline-block;
+            vertical-align: middle;
+            word-break: break-all;
+        }
+
+        .clickable-marker {
+            position: absolute;
+            background-color: rgba(255, 0, 0, 0.3);
+            border: 2px solid red;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .khafre-marker {
+            left: 39.8%;
+            top: 53%;
+        }
+
+        .khufu-marker {
+            left: 29%;
+            top: 37%;
+            background-color: rgba(0, 150, 255, 0.3);
+            border: 2px solid blue;
+        }
+
+        .sphinx-marker {
+            left: 57%;
+            top: 25%;
+            background-color: rgba(0, 180, 0, 0.3);
+            border: 2px solid green;
+        }
+
+        .menkaure-marker {
+            left: 57%;
+            top: 62%;
+            background-color: rgba(180, 0, 180, 0.3);
+            border: 2px solid purple;
+        }
+
+        .clickable-marker::after {
+            content: " ";
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .map-container img {
+                max-width: 95vh;
+                max-height: 95vw;
+            }
+
+            .audio-player {
+                width: 384px;
+                right: -170px;
+                top: calc(50% + 155px);
+                padding: 10px;
+            }
+
+            .audio-player audio {
+                width: 192px;
+                min-width: 192px;
+            }
+
+            .audio-title {
+                font-size: 10px;
+                width: 168px;
+                line-height: 1.1;
+            }
+
+            .clickable-marker {
+                width: 21px;
+                height: 21px;
+            }
+
+            .clickable-marker::after {
+                font-size: 10px;
+            }
+        }
+    </style>
+    <script>
+        function stopAllAudio() {
+            var audios = document.querySelectorAll('.audio-player audio');
+            audios.forEach(function(audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.classList.remove('active');
+            });
+            document.getElementById('audioPlayer').classList.remove('show');
+            document.getElementById('audioTitle').textContent = '';
+        }
+
+        function playAudio(audioId, titleText) {
+            stopAllAudio();
+            var audio = document.getElementById(audioId);
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            audio.classList.add('active');
+            title.textContent = titleText;
+            audio.play();
+        }
+
+        function startBackgroundMusic() {
+            var bgm = document.getElementById('backgroundMusic');
+            bgm.muted = false;
+            bgm.play();
+        }
+
+        const markers = {
+            khafra: { x: 39.8, y: 53, audioId: 'khafraAudio', title: '正在播放：卡夫拉金字塔语音讲解' },
+            khufu: { x: 29, y: 37, audioId: 'khufuAudio', title: '正在播放：古夫金字塔语音讲解' },
+            sphinx: { x: 57, y: 25, audioId: 'sphinxAudio', title: '正在播放：狮身人面像语音讲解' },
+            menkaure: { x: 57, y: 62, audioId: 'menkaureAudio', title: '正在播放：孟卡拉金字塔语音讲解' }
+        };
+
+        window.onload = function() {
+            var gizaAudio = document.getElementById('gizaAudio');
+            var player = document.getElementById('audioPlayer');
+            var title = document.getElementById('audioTitle');
+            player.classList.add('show');
+            gizaAudio.classList.add('active');
+            title.textContent = '正在播放：吉萨金字塔语音讲解';
+            gizaAudio.play();
+
+            document.querySelector('.map-container').addEventListener('click', function (e) {
+                const clickX = e.clientX;
+                const clickY = e.clientY;
+
+                for (const marker in markers) {
+                    const markerData = markers[marker];
+                    const markerElement = document.querySelector(`.${marker}-marker`);
+                    const markerRect = markerElement.getBoundingClientRect();
+                    const markerX = markerRect.left + markerRect.width / 2;
+                    const markerY = markerRect.top + markerRect.height / 2;
+                    const distance = Math.sqrt(Math.pow(clickX - markerX, 2) + Math.pow(clickY - markerY, 2));
+
+                    if (distance < 42) {
+                        playAudio(markerData.audioId, markerData.title);
+                        break;
+                    }
+                }
+
+                startBackgroundMusic();
+            });
+        }
+    </script>
+</head>
+<body>
+    <audio id="backgroundMusic" muted loop>
+        <source src="bgm.mp3" type="audio/mpeg">
+    </audio>
+    <div class="map-container">
+        <div id="audioPlayer" class="audio-player">
+            <div id="audioTitle" class="audio-title"></div>
+            <audio id="gizaAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="吉萨金字塔语音讲解.mp3" type="audio/mpeg">
+            </audio>
+            <audio id="khafraAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="卡夫拉金字塔语音讲解.mp3" type="audio/mpeg">
+            </audio>
+            <audio id="khufuAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="古夫金字塔语音讲解.mp3" type="audio/mpeg">
+            </audio>
+            <audio id="sphinxAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="狮身人面像语音讲解.mp3" type="audio/mpeg">
+            </audio>
+            <audio id="menkaureAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
+                <source src="孟卡拉金字塔语音讲解.mp3" type="audio/mpeg">
+            </audio>
+        </div>
+        <img src="金字塔景区地区（中文）.png" alt="吉萨金字塔景区地图" usemap="#pyramids-map">
+        <div class="clickable-marker khafre-marker" onclick="playAudio('khafraAudio', '正在播放：卡夫拉金字塔语音讲解')"></div>
+        <div class="clickable-marker khufu-marker" onclick="playAudio('khufuAudio', '正在播放：古夫金字塔语音讲解')"></div>
+        <div class="clickable-marker sphinx-marker" onclick="playAudio('sphinxAudio', '正在播放：狮身人面像语音讲解')"></div>
+        <div class="clickable-marker menkaure-marker" onclick="playAudio('menkaureAudio', '正在播放：孟卡拉金字塔语音讲解')"></div>
+        <map name="pyramids-map">
+            <area shape="rect" coords="600,370,780,430" href="javascript:void(0);" onclick="playAudio('khafraAudio', '正在播放：卡夫拉金字塔语音讲解')">
+            <area shape="rect" coords="680,40,860,100" href="javascript:void(0);" onclick="playAudio('sphinxAudio', '正在播放：狮身人面像语音讲解')">
+            <area shape="rect" coords="750,480,930,540" href="javascript:void(0);" onclick="playAudio('menkaureAudio', '正在播放：孟卡拉金字塔语音讲解')">
+        </map>
+    </div>
+</body>
+</html>
