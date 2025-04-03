@@ -345,7 +345,7 @@
             var title = document.getElementById('audioTitle');
             player.classList.add('show');
             audio.classList.add('active');
-            title.textContent = '正在播放：卡夫拉金字塔语音讲解';
+            title.textContent = 'Now Playing: Khafre Pyramid Audio Guide';
             audio.play();
         }
         
@@ -356,7 +356,7 @@
             var title = document.getElementById('audioTitle');
             player.classList.add('show');
             audio.classList.add('active');
-            title.textContent = '正在播放：古夫金字塔语音讲解';
+            title.textContent = 'Now Playing: Khufu Pyramid Audio Guide';
             audio.play();
         }
         
@@ -367,7 +367,7 @@
             var title = document.getElementById('audioTitle');
             player.classList.add('show');
             audio.classList.add('active');
-            title.textContent = '正在播放：狮身人面像语音讲解';
+            title.textContent = 'Now Playing: Great Sphinx Audio Guide';
             audio.play();
         }
         
@@ -378,7 +378,7 @@
             var title = document.getElementById('audioTitle');
             player.classList.add('show');
             audio.classList.add('active');
-            title.textContent = '正在播放：孟卡拉金字塔语音讲解';
+            title.textContent = 'Now Playing: Menkaure Pyramid Audio Guide';
             audio.play();
         }
 
@@ -394,8 +394,14 @@
             var title = document.getElementById('audioTitle');
             player.classList.add('show');
             gizaAudio.classList.add('active');
-            title.textContent = '正在播放：吉萨金字塔语音讲解';
+            title.textContent = 'Now Playing: Giza Pyramids Audio Guide';
             gizaAudio.play();
+            
+            // Check for autoplay flag from language selection page
+            if (sessionStorage.getItem('autoplay') === 'true') {
+                sessionStorage.removeItem('autoplay'); // Clear the flag
+                startBackgroundMusic();
+            }
             
             // 添加点击事件监听，使图片的整个区域都可点击
             document.querySelector('.map-container').addEventListener('click', function(e) {
@@ -464,19 +470,19 @@
         <div id="audioPlayer" class="audio-player">
             <div id="audioTitle" class="audio-title"></div>
             <audio id="gizaAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
-                <source src="吉萨金字塔语音讲解.mp3" type="audio/mpeg">  
+                <source src="吉萨金字塔语音讲解（en）.mp3" type="audio/mpeg">  
             </audio>
             <audio id="khafraAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
-                <source src="卡夫拉金字塔语音讲解.mp3" type="audio/mpeg">  
+                <source src="卡夫拉金字塔语音讲解(en).mp3" type="audio/mpeg">  
             </audio>
             <audio id="khufuAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
-                <source src="古夫金字塔语音讲解.mp3" type="audio/mpeg">  
+                <source src="古夫金字塔语音讲解（en）.mp3" type="audio/mpeg">  
             </audio>
             <audio id="sphinxAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
-                <source src="狮身人面像语音讲解.mp3" type="audio/mpeg">  
+                <source src="狮身人面像语音讲解（en）.mp3" type="audio/mpeg">  
             </audio>
             <audio id="menkaureAudio" controls controlsList="nodownload nofullscreen noremoteplayback">
-                <source src="孟卡拉金字塔语音讲解.mp3" type="audio/mpeg">  
+                <source src="孟卡拉金字塔语音讲解(en).mp3" type="audio/mpeg">  
             </audio>
         </div>
         <img src="金字塔景区地区（en）.png" alt="吉萨金字塔景区地图" usemap="#pyramids-map">
