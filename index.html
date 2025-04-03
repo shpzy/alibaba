@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giza Pyramids Complex</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            background-image: url('金字塔景区地区（en）.png'); /* Use the provided image as background */
+            background-size: cover;
+            background-position: center;
+            transform: rotate(90deg);
+        }
+
+        .content {
+            text-align: center;
+            color: #FF4500; /* Change text color to orange-red for better contrast */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            transform: rotate(-90deg);
+        }
+
+        .welcome {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .language-selection {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .language-selection a {
+            padding: 15px 30px;
+            background-color: rgba(0, 128, 0, 0.7); /* 绿色背景 */
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: 2px solid #00FF00; /* 亮绿色边框 */
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); /* 绿色光晕效果 */
+        }
+
+        .language-selection a:hover {
+            background-color: rgba(0, 160, 0, 0.9);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+    <script>
+        function setAutoPlayFlag() {
+            sessionStorage.setItem('autoplay', 'true');
+        }
+    </script>
+</head>
+<body>
+    <audio id="backgroundMusic" autoplay loop>
+        <source src="bgm.mp3" type="audio/mpeg">
+    </audio>
+    <div class="content">
+        <div class="welcome">
+            <p>Welcome to the Giza Pyramids Complex</p>
+            <p>أهلاً وسهلاً بمجمع أهرامات الجيزة</p>
+        </div>
+        <div class="language-selection">
+            <a href="pyramids_map32.html" onclick="setAutoPlayFlag()">中文</a>
+            <a href="pyramids_mape2.html" onclick="setAutoPlayFlag()">English</a>
+            <a href="pyramids_mapeg1.html" onclick="setAutoPlayFlag()">العربية</a>
+        </div>
+    </div>
+</body>
+</html> 
