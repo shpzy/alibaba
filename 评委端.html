@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>学生演讲评委打分系统</title>
+    <style>
+        /* 自定义样式 */
+        body {
+            font-family: 'Inter', sans-serif, 'Microsoft YaHei', 'SimSun', sans-serif; /* 添加中文字体 fallback */
+            background-color: #f4f4f9;
+        }
+
+        /* 按钮动画效果 */
+        button {
+            transition: all 0.3s ease;
+            cursor: pointer; /* 明确按钮可点击 */
+        }
+
+        button:hover:not(:disabled) { /* 仅在非禁用时应用 hover 效果 */
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            margin: 20px auto; /* 增加上下间距 */
+        }
+
+        /* 输入框样式 */
+        input[type="password"], input[type="number"] {
+             appearance: none; /* 移除默认样式 */
+            -moz-appearance: textfield; /* Firefox 特殊处理 */
+             box-sizing: border-box; /* 包含 padding 和 border */
+        }
+         /* 隐藏 number 输入框的上下箭头 (Webkit/Blink) */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        /* 简单的 fade-in 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <!-- 容器，确保内容居中 -->
+    <div class="container mx-auto px-4">
+
+        <!-- 评委登录页 -->
+        <div id="login-page" class="card opacity-0 animate-fade-in">
+             <h1 class="text-3xl font-bold mb-6 text-center text-blue-600">评委登录</h1>
+             <input type="password" id="judge-password" placeholder="请输入评委密码" class="p-3 border border-gray-300 rounded mb-4 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+             <button id="login-button" class="p-3 bg-blue-500 text-white rounded w-full hover:bg-blue-600 font-semibold disabled:opacity-50" onclick="handleLogin()">登录</button>
+             <p id="login-error" class="text-red-500 text-sm mt-2 text-center"></p>
+        </div>
+        <!-- 打分页 -->
+        <div id="scoring-page" class="hidden card opacity-0">
+             <h1 class="text-3xl font-bold mb-4 text-center text-blue-600">当前演讲者信息</h1>
+             <!-- **** MODIFIED LINE: Added break-words **** -->
+             <p id="project-name" class="text-lg mb-2 text-center font-medium text-gray-700 break-words">项目名：待更新</p>
+             <p id="speaker-name" class="text-lg mb-6 text-center font-medium text-gray-700">演讲者名：待更新</p>
+             <input type="number" id="score-input" min="0" max="10" step="0.1" placeholder="请输入分数 (0-10)" class="p-3 border border-gray-300 rounded mb-4 w-full text-center text-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+             <button id="submit-score-button" class="p-3 bg-green-500 text-white rounded w-full hover:bg-green-600 font-semibold disabled:opacity-50" onclick="handleSubmitScore()">提交分数</button>
+              <p id="score-error" class="text-red-500 text-sm mt-2 text-center"></p>
+        </div>
+        <!-- 展示页 -->
+        <div id="display-page" class="hidden card opacity-0">
+              <h1 class="text-3xl font-bold mb-4 text-center text-blue-600">评分状态</h1>
+              <!-- **** MODIFIED LINE: Added break-words **** -->
+              <p id="display-project-name" class="text-lg mb-2 text-center font-medium text-gray-700 break-words">项目名：待更新</p>
+              <p id="display-speaker-name" class="text-lg mb-4 text-center font-medium text-gray-700">演讲者名：待更新</p>
+              <p id="completed-judges" class="text-lg mb-4 text-center text-purple-600 font-semibold">已完成打分评委数：<span class="text-2xl">0</span> / 13</p>
+              <div id="scores-container" class="mb-4 hidden">
+                  <h2 class="text-xl font-bold mb-2 text-center text-gray-800">最终结果</h2>
+                  <p id="average-score" class="text-2xl font-bold text-center text-red-600">平均分：待计算</p>
+              </div>
+               <p id="wait-message" class="text-center text-gray-500 mb-4">请等待所有评委完成打分...</p>
+              <button id="next-speaker-button" class="p-3 bg-blue-500 text-white rounded w-full hover:bg-blue-600 font-semibold disabled:opacity-50" onclick="handleNextSpeaker()" disabled>下一位演讲者</button>
+              <p id="display-info" class="text-gray-600 text-sm mt-2 text-center"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- 全局变量 ---
+        let currentSpeakerIndex = 0;
+        let currentJudgeId = null;
+        const totalJudgesRequired = 13;
+        let pollingIntervalId = null;
+        const POLLING_INTERVAL_MS = 3000; // 3秒轮询
+
+        // --- 演讲者数据 (already updated in previous step) ---
+        const speakers = [
+            { projectName: '高校通——高校二手书与真题试卷共享交易平台', speakerName: '马瑞良' },
+            { projectName: 'ai宠物病灶分析-从第一步直到医院我们全为您的爱宠解决', speakerName: '张茗睿' },
+            { projectName: 'AR/VR在未来教育领域的应用', speakerName: '张浩乐' },
+            { projectName: '智能移动垃圾桶', speakerName: '凌问天' },
+            { projectName: '中医药文化与饮食的融合', speakerName: '王鑫宇' },
+            { projectName: '失物招领自动处理器', speakerName: '周英' },
+            { projectName: '智航志愿——AI高考生涯规划平台', speakerName: '张晴辉' },
+            { projectName: '纳米碳化硅增强环氧树脂基复合材料的击穿性能优化及介电调控研究', speakerName: '宋文辉' },
+            { projectName: '复古电子产品复刻', speakerName: '孙禹涵' },
+            { projectName: '卫生巾共享自动售货机', speakerName: '格根娜' },
+            { projectName: '宿舍共享冰箱', speakerName: '满宸瑜' },
+            { projectName: '哈理工二手书交易平台', speakerName: '马蓉' },
+            { projectName: '秸能再生——基于秸秆回收利用的新型蘑菇培育生物基研发', speakerName: '张剑' }
+        ];
+
+        // --- API 端点 ---
+        const API_LOGIN = 'https://j7jbgbxwtp.hzh.sealos.run/2';
+        const API_SUBMIT_SCORE = 'https://j7jbgbxwtp.hzh.sealos.run/suanfen';
+        const API_GET_STATUS = 'https://j7jbgbxwtp.hzh.sealos.run/getProjectStatus';
+        const API_ADVANCE_SPEAKER = 'https://j7jbgbxwtp.hzh.sealos.run/advanceSpeaker';
+        // --- 已更新：检查评委打分状态的 API ---
+        const API_CHECK_JUDGE_STATUS = 'https://j7jbgbxwtp.hzh.sealos.run/checkJudgeScoreStatus';
+
+        // --- DOM 元素引用 ---
+        const loginPage = document.getElementById('login-page'); const judgePasswordInput = document.getElementById('judge-password'); const loginButton = document.getElementById('login-button'); const loginError = document.getElementById('login-error'); const scoringPage = document.getElementById('scoring-page'); const projectNameDisplay = document.getElementById('project-name'); const speakerNameDisplay = document.getElementById('speaker-name'); const scoreInput = document.getElementById('score-input'); const submitScoreButton = document.getElementById('submit-score-button'); const scoreError = document.getElementById('score-error'); const displayPage = document.getElementById('display-page'); const displayProjectName = document.getElementById('display-project-name'); const displaySpeakerName = document.getElementById('display-speaker-name'); const completedJudgesDisplay = document.getElementById('completed-judges'); const scoresContainer = document.getElementById('scores-container'); const averageScoreDisplay = document.getElementById('average-score'); const waitMessage = document.getElementById('wait-message'); const nextSpeakerButton = document.getElementById('next-speaker-button'); const displayInfo = document.getElementById('display-info');
+
+        // --- 辅助函数 ---
+        function stopPolling() { if (pollingIntervalId) { console.log("[轮询] 停止轮询定时器 ID:", pollingIntervalId); clearInterval(pollingIntervalId); pollingIntervalId = null; } } function switchPage(pageToShowId) { console.log(`[页面切换] 切换到: ${pageToShowId}`); stopPolling(); loginPage.classList.add('hidden', 'opacity-0'); scoringPage.classList.add('hidden', 'opacity-0'); displayPage.classList.add('hidden', 'opacity-0'); const pageToShow = document.getElementById(pageToShowId); if (pageToShow) { pageToShow.classList.remove('hidden'); pageToShow.classList.remove('animate-fade-in'); void pageToShow.offsetWidth; pageToShow.classList.add('animate-fade-in'); pageToShow.classList.remove('opacity-0'); if (pageToShowId === 'display-page') { setTimeout(checkAndStartPolling, 100); } } } function setButtonState(button, disabled, text) { if(button.id === 'submit-score-button' || button.id === 'next-speaker-button'){ console.log(`[按钮状态] 按钮 ID: ${button.id}, 是否禁用: ${disabled}, 文本: ${text || button.textContent}`); } button.disabled = disabled; if (text) { button.textContent = text; } } function showError(errorElement, message) { errorElement.textContent = message; } function clearError(errorElement) { errorElement.textContent = ''; }
+        async function fetchProjectStatus() { if (currentSpeakerIndex >= speakers.length) { console.log("[轮询] 没有更多演讲者，跳过状态获取。"); stopPolling(); return; } if (!API_GET_STATUS || API_GET_STATUS === '在此处填入你的/getProjectStatus云函数URL') { console.error("[轮询] 错误：获取状态的API URL未配置！"); stopPolling(); return; } const currentSpeaker = speakers[currentSpeakerIndex]; console.log(`[轮询] 正在获取项目状态: ${currentSpeaker.projectName} (索引: ${currentSpeakerIndex})`); try { const response = await fetch(API_GET_STATUS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectName: currentSpeaker.projectName }) }); if (!response.ok) { console.error(`[轮询] 获取状态失败，HTTP状态码: ${response.status}`); return; } const data = await response.json(); if (data.success) { console.log(`[轮询] 获取到状态: 已提交=${data.totalScoresSubmitted}, 平均分=${data.averageScore}`); if (!displayPage.classList.contains('hidden')) { updateDisplayPage(data.totalScoresSubmitted, data.averageScore); } else { console.log("[轮询] 收到状态，但当前不是展示页，跳过UI更新。"); } if (data.totalScoresSubmitted >= totalJudgesRequired) { console.log("[轮询] 评分已完成（根据轮询结果）。停止轮询。"); stopPolling(); } } else { console.error(`[轮询] 获取状态请求成功但返回业务失败: ${data.message}`); } } catch (error) { console.error('[轮询] 获取状态时发生网络错误:', error); } }
+        function checkAndStartPolling() { if (displayPage.classList.contains('hidden')) { console.log("[轮询检查] 当前不在展示页，不启动轮询。"); stopPolling(); return; } const countText = completedJudgesDisplay.textContent; const match = countText.match(/(\d+)\s*\/\s*(\d+)/); const currentDisplayedCount = match ? parseInt(match[1]) : 0; if (currentDisplayedCount < totalJudgesRequired && pollingIntervalId === null) { console.log(`[轮询检查] 评分未完成 (当前显示 ${currentDisplayedCount}) 且无轮询运行。启动轮询。`); fetchProjectStatus(); pollingIntervalId = setInterval(fetchProjectStatus, POLLING_INTERVAL_MS); } else if (currentDisplayedCount >= totalJudgesRequired) { console.log("[轮询检查] 评分已完成，无需轮询。"); stopPolling(); } else { console.log(`[轮询检查] 轮询已在运行 (ID: ${pollingIntervalId}) 或无需启动。`); } }
+
+        // --- 事件处理函数 ---
+
+        /** 处理登录，接收全局索引，然后检查评委状态再导航 */
+        async function handleLogin() {
+            const password = judgePasswordInput.value.trim(); if (!password) { showError(loginError, '请输入密码'); return; } clearError(loginError); setButtonState(loginButton, true, '登录中...');
+            console.log(`[登录处理] 尝试登录...`);
+            try {
+                const response = await fetch(API_LOGIN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    currentJudgeId = data.judgeId;
+                    currentSpeakerIndex = data.currentGlobalIndex || 0; // 使用后端返回的索引
+
+                    console.log(`[登录处理] 成功! 评委 ID: ${currentJudgeId}, 全局演讲者索引已同步为: ${currentSpeakerIndex}`);
+                    judgePasswordInput.value = '';
+
+                    if (currentSpeakerIndex < speakers.length) {
+                         console.log(`[登录处理] 检查评委对索引 ${currentSpeakerIndex} 的打分状态...`);
+                         await checkJudgeStatusAndNavigate(); // 调用检查函数
+                    } else {
+                         console.log(`[登录处理] 所有演讲者已结束 (根据全局索引)。显示结束页面。`);
+                         displayInfo.textContent = '所有演讲已结束。';
+                         const lastSpeaker = speakers[speakers.length - 1];
+                         if(lastSpeaker) { displayProjectName.textContent = `项目名：${lastSpeaker.projectName}`; displaySpeakerName.textContent = `演讲者名：${lastSpeaker.speakerName}`; }
+                         updateDisplayPage(totalJudgesRequired, null); // 显示完成状态
+                         switchPage('display-page');
+                    }
+                } else {
+                    console.log(`[登录处理] 失败。状态码: ${response.status}, 消息: ${data.message}`);
+                    showError(loginError, data.message || `登录失败 (${response.status})`);
+                }
+            } catch (error) {
+                console.error('[登录处理] 网络请求错误:', error);
+                showError(loginError, '网络请求出错，请稍后再试');
+            } finally {
+                setButtonState(loginButton, false, '登录');
+            }
+        }
+
+        /** 检查当前评委对当前全局演讲者的打分状态并导航 */
+        async function checkJudgeStatusAndNavigate() {
+             if (currentSpeakerIndex >= speakers.length) { console.log("[导航检查] 索引超出范围，显示结束页。"); const lastSpeaker = speakers[speakers.length - 1]; if (lastSpeaker) { displayProjectName.textContent = `项目名：${lastSpeaker.projectName}`; displaySpeakerName.textContent = `演讲者名：${lastSpeaker.speakerName}`; } updateDisplayPage(totalJudgesRequired, null); switchPage('display-page'); return; }
+             // --- 使用已更新的 URL ---
+             if (!API_CHECK_JUDGE_STATUS || API_CHECK_JUDGE_STATUS === '在此处填入你的/checkJudgeScoreStatus云函数URL') { console.error("[导航检查] 错误：检查评委状态的 API URL 未配置！将默认进入打分页。"); updateScoringPage(); switchPage('scoring-page'); return; }
+
+             const currentSpeaker = speakers[currentSpeakerIndex];
+             console.log(`[导航检查] 调用后端检查评委 ${currentJudgeId} 对项目 ${currentSpeaker.projectName} 的状态...`);
+             loginError.textContent = "正在检查您的评分状态..."; // 显示加载提示
+
+             try {
+                 const response = await fetch(API_CHECK_JUDGE_STATUS, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ projectName: currentSpeaker.projectName, judgeId: currentJudgeId })
+                 });
+                 const data = await response.json();
+                 clearError(loginError); // 清除加载提示
+
+                 if (response.ok && data.success) {
+                     console.log(`[导航检查] 检查结果: hasScored = ${data.hasScored}`);
+                     if (data.hasScored) {
+                          console.log(`[导航检查] 该评委已评分，导航到展示页。`);
+                          // 直接去展示页前，先获取一下该项目的整体状态
+                          await fetchProjectStatus();
+                          // fetchProjectStatus 内部的 updateDisplayPage 会决定是否启动轮询
+                          switchPage('display-page');
+                     } else {
+                          console.log(`[导航检查] 该评委未评分，导航到打分页。`);
+                          updateScoringPage();
+                          switchPage('scoring-page');
+                     }
+                 } else {
+                      console.error("[导航检查] 检查状态失败:", data.message); showError(loginError, `检查评分状态失败: ${data.message || '未知错误'}，请尝试手动打分。`); updateScoringPage(); switchPage('scoring-page');
+                 }
+             } catch (error) {
+                  clearError(loginError); console.error("[导航检查] 检查状态时发生网络错误:", error); showError(loginError, "网络错误，无法检查评分状态，请尝试手动打分。"); updateScoringPage(); switchPage('scoring-page');
+             }
+        }
+
+        /** 更新打分页 */
+        function updateScoringPage() {
+            console.log(`[更新打分页] 正在为演讲者索引更新: ${currentSpeakerIndex}`); if (currentSpeakerIndex < speakers.length) { const currentSpeaker = speakers[currentSpeakerIndex]; console.log(`[更新打分页] 演讲者详情:`, currentSpeaker); projectNameDisplay.textContent = `项目名：${currentSpeaker.projectName}`; speakerNameDisplay.textContent = `演讲者名：${currentSpeaker.speakerName}`; scoreInput.value = ''; clearError(scoreError); setButtonState(submitScoreButton, false); } else { console.log("[更新打分页] 没有更多演讲者了。"); }
+        }
+
+        /** 处理提交分数 */
+        async function handleSubmitScore() {
+             const scoreValue = scoreInput.value.trim(); const score = parseFloat(scoreValue); console.log(`[提交分数处理] 尝试提交。评委: ${currentJudgeId}, 演讲者索引 (本地): ${currentSpeakerIndex}`); if (scoreValue === '' || isNaN(score) || score < 0 || score > 10) { showError(scoreError, '请输入 0 到 10 之间的有效分数'); return; } if (!currentJudgeId) { showError(scoreError, '评委身份信息丢失，请重新登录'); return; } clearError(scoreError); setButtonState(submitScoreButton, true, '提交中...'); if (currentSpeakerIndex >= speakers.length) { console.error("[提交分数处理] 错误: currentSpeakerIndex 超出范围!", currentSpeakerIndex); showError(scoreError, '错误：没有更多演讲者了。'); setButtonState(submitScoreButton, false); return; } const currentSpeaker = speakers[currentSpeakerIndex]; console.log(`[提交分数处理] 正在为项目提交: ${currentSpeaker.projectName}, 演讲者: ${currentSpeaker.speakerName}, 分数: ${score}`); try { const response = await fetch(API_SUBMIT_SCORE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectName: currentSpeaker.projectName, speakerName: currentSpeaker.speakerName, score: score, judgeId: currentJudgeId }) }); const data = await response.json(); console.log(`[提交分数处理] 后端响应状态码: ${response.status}, 返回数据:`, data); if (response.ok && data.success) { console.log(`[提交分数处理] 提交成功。更新展示页面。`); updateDisplayPage(data.totalScoresSubmitted, data.averageScore); switchPage('display-page'); } else { console.error(`[提交分数处理] 提交失败。状态码: ${response.status}, 消息: ${data.message}`); if (response.status === 409) { showError(scoreError, data.message || '您已对此演讲者评分。'); updateDisplayPage(data.totalScoresSubmitted, null); switchPage('display-page'); displayInfo.textContent = "您已完成对当前演讲者的评分，请等待。"; } else { showError(scoreError, data.message || `提交失败 (${response.status})`); setButtonState(submitScoreButton, false, '提交分数'); } } } catch (error) { console.error('[提交分数处理] 网络请求错误:', error); showError(scoreError, '网络请求出错，请稍后再试'); setButtonState(submitScoreButton, false, '提交分数'); }
+        }
+
+        /** 更新展示页信息，并检查轮询 */
+        function updateDisplayPage(totalSubmittedCount, averageScoreFromBackend) {
+            console.log(`[更新展示页] 正在为索引 ${currentSpeakerIndex} 更新。已提交: ${totalSubmittedCount}, 平均分: ${averageScoreFromBackend}`); if (currentSpeakerIndex >= speakers.length) { console.warn("[更新展示页] 调用时 currentSpeakerIndex 超出范围。"); return; } const currentSpeaker = speakers[currentSpeakerIndex]; displayProjectName.textContent = `项目名：${currentSpeaker.projectName}`; displaySpeakerName.textContent = `演讲者名：${currentSpeaker.speakerName}`; const count = (totalSubmittedCount !== null && totalSubmittedCount !== undefined) ? totalSubmittedCount : '?'; const currentCountInt = parseInt(count); completedJudgesDisplay.innerHTML = `已完成打分评委数：<span class="text-2xl">${count}</span> / ${totalJudgesRequired}`; let scoringComplete = false; if (!isNaN(currentCountInt) && currentCountInt >= totalJudgesRequired) { scoringComplete = true; console.log(`[更新展示页] 索引 ${currentSpeakerIndex} 的所有评委已完成。启用“下一位”按钮。`); scoresContainer.classList.remove('hidden'); waitMessage.classList.add('hidden'); setButtonState(nextSpeakerButton, false); if (averageScoreFromBackend !== null && averageScoreFromBackend !== undefined) { averageScoreDisplay.textContent = `平均分：${averageScoreFromBackend.toFixed(2)}`; } else { averageScoreDisplay.textContent = '平均分：等待计算...'; if (averageScoreFromBackend === null) { console.log("[更新展示页] 计数已满但平均分是null，可能需要再次获取状态。"); } } displayInfo.textContent = "当前演讲者评分已全部完成。"; stopPolling(); } else { scoringComplete = false; console.log(`[更新展示页] 索引 ${currentSpeakerIndex} 的评分未完成 (当前 ${count})。禁用“下一位”按钮。`); scoresContainer.classList.add('hidden'); waitMessage.classList.remove('hidden'); setButtonState(nextSpeakerButton, true); displayInfo.textContent = ""; } if (!displayPage.classList.contains('hidden')) { checkAndStartPolling(); }
+        }
+
+        /** 处理“下一位演讲者”按钮点击事件 */
+        async function handleNextSpeaker() {
+             console.log(`[下一位处理] 点击。点击前本地索引: ${currentSpeakerIndex}`); const countText = completedJudgesDisplay.textContent; const match = countText.match(/(\d+)\s*\/\s*(\d+)/); if (!match || parseInt(match[1]) < parseInt(match[2])) { console.warn(`[下一位处理] 点击过早? 当前计数: ${countText}`); alert('评分尚未完成，请稍候。'); return; } if (!API_ADVANCE_SPEAKER || API_ADVANCE_SPEAKER === '在此处填入你的/advanceSpeaker云函数URL') { console.error("[下一位处理] 错误：推进演讲者的API URL未配置！"); alert("错误：无法连接服务器以进行下一步操作。"); return; } stopPolling(); setButtonState(nextSpeakerButton, true, '处理中...'); try { console.log("[下一位处理] 调用后端 /advanceSpeaker ..."); const response = await fetch(API_ADVANCE_SPEAKER, { method: 'POST', headers: { 'Content-Type': 'application/json' }, }); const data = await response.json(); console.log("[下一位处理] /advanceSpeaker 响应:", data); if (response.ok && data.success) { currentSpeakerIndex = data.newIndex; console.log(`[下一位处理] 后端已推进，本地索引更新为: ${currentSpeakerIndex}`); if (data.isEnd || currentSpeakerIndex >= speakers.length) { console.log(`[下一位处理] 所有演讲者已结束。显示结束信息。`); alert('所有演讲者已完成演讲！'); setButtonState(nextSpeakerButton, true, '全部结束'); displayProjectName.textContent = '所有项目已结束'; displaySpeakerName.textContent = ''; completedJudgesDisplay.textContent = ''; scoresContainer.classList.add('hidden'); waitMessage.textContent = '感谢各位评委！评分结束。'; waitMessage.classList.remove('hidden'); switchPage('display-page'); } else { console.log(`[下一位处理] 准备并切换到索引 ${currentSpeakerIndex} 的打分页面。`); updateScoringPage(); switchPage('scoring-page'); console.log(`[下一位处理] 重置展示页状态以备后用。`); displayInfo.textContent = ""; scoresContainer.classList.add('hidden'); waitMessage.classList.remove('hidden'); completedJudgesDisplay.innerHTML = `已完成打分评委数：<span class="text-2xl">0</span> / ${totalJudgesRequired}`; setButtonState(nextSpeakerButton, true); } } else { console.error("[下一位处理] 后端推进失败:", data.message); alert(`无法进行下一步操作: ${data.message || '未知服务器错误'}`); setButtonState(nextSpeakerButton, false, '下一位演讲者'); } } catch (error) { console.error('[下一位处理] 调用 /advanceSpeaker 时发生网络错误:', error); alert("网络错误，无法进行下一步操作，请稍后重试。"); setButtonState(nextSpeakerButton, false, '下一位演讲者'); }
+        }
+
+        // --- 页面初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("[页面加载完成] 初始化登录页面。");
+            switchPage('login-page');
+        });
+
+        // --- 键盘事件监听 ---
+        judgePasswordInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') { event.preventDefault(); handleLogin(); } });
+         scoreInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') { event.preventDefault(); handleSubmitScore(); } });
+
+    </script>
+</body>
+</html>
