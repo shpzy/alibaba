@@ -45,42 +45,41 @@
         // --- 全局变量 ---
         let currentGlobalIndex = 0;
         let totalSpeakers = 0; // 总演讲人数，将从 speakers 数组获取
-        // --- 新增：定义总评委数 ---
-        const totalJudgesRequired = 13; // <--- 添加这一行定义
+        const totalJudgesRequired = 13;
         let audiencePollingIntervalId = null;
         const AUDIENCE_POLLING_INTERVAL_MS = 4000; // 观众页面轮询间隔（4秒）
         let previousResultsCount = 0;
 
         // --- 演讲者数据 (已根据图片更新) ---
-        const speakers = [
-            { projectName: '高校通——高校二手书与真题试卷共享交易平台', speakerName: '马瑞良' },
-            { projectName: 'ai宠物病灶分析-从第一步直到医院我们全为您的爱宠解决', speakerName: '张茗睿' },
-            { projectName: 'AR/VR在未来教育领域的应用', speakerName: '张浩乐' },
-            { projectName: '智能移动垃圾桶', speakerName: '凌问天' },
-            { projectName: '中医药文化与饮食的融合', speakerName: '王鑫宇' },
-            { projectName: '失物招领自动处理器', speakerName: '周英' },
-            { projectName: '智航志愿——AI高考生涯规划平台', speakerName: '张晴辉' },
-            { projectName: '纳米碳化硅增强环氧树脂基复合材料的击穿性能优化及介电调控研究', speakerName: '宋文辉' },
-            { projectName: '复古电子产品复刻', speakerName: '孙禹涵' },
-            { projectName: '卫生巾共享自动售货机', speakerName: '格根娜' },
-            { projectName: '宿舍共享冰箱', speakerName: '满宸瑜' },
+        const speakers = [ // 保持您之前更新的 speakers 列表
             { projectName: '哈理工二手书交易平台', speakerName: '马蓉' },
-            { projectName: '秸能再生——基于秸秆回收利用的新型蘑菇培育生物基研发', speakerName: '张剑' }
+            { projectName: '失物招领自动处理器', speakerName: '周英' },
+            { projectName: '卫生巾共享自动售货机', speakerName: '格根娜' },
+            { projectName: '纳米碳化硅增强环氧树脂基复合材料的击穿性能优化及介电调控研究', speakerName: '宋文辉' },
+            { projectName: '秸能再生——基于秸秆回收利用的新型蘑菇培育生物基研发', speakerName: '张剑' },
+            { projectName: '复古电子产品复刻', speakerName: '孙禹涵' },
+            { projectName: '智航志愿——AI高考生涯规划平台', speakerName: '张晴辉' },
+            { projectName: 'ai宠物病灶分析-从第一步直到医院我们全为您的爱宠解决', speakerName: '张茗睿' },
+            { projectName: '宿舍共享冰箱', speakerName: '满宸瑜' },
+            { projectName: '高校通——高校二手书与真题试卷共享交易平台', speakerName: '马瑞良' },
+            { projectName: '中医药文化与饮食的融合', speakerName: '王鑫宇' },
+            { projectName: 'AR/VR在未来教育领域的应用', speakerName: '张浩乐' },
+            { projectName: '智能移动垃圾桶', speakerName: '凌问天' }
         ];
-        totalSpeakers = speakers.length; // totalSpeakers 会自动更新为 13
+        totalSpeakers = speakers.length;
 
-        // --- API 端点 (已更新) ---
-        const API_GET_CURRENT_INDEX = 'https://j7jbgbxwtp.hzh.sealos.run/getCurrentIndex'; // 您的获取全局索引URL
-        const API_GET_STATUS = 'https://j7jbgbxwtp.hzh.sealos.run/getProjectStatus';      // 您的获取项目状态URL (复用)
-        const API_GET_ALL_RESULTS = 'https://j7jbgbxwtp.hzh.sealos.run/getAllResults'; // 您的获取所有结果URL
+        // --- API 端点 (已更新为您的新地址) ---
+        const API_GET_CURRENT_INDEX = 'https://fscswp3523.hzh.sealos.run/getCurrentIndex';
+        const API_GET_STATUS = 'https://fscswp3523.hzh.sealos.run/getProjectStatus';
+        const API_GET_ALL_RESULTS = 'https://fscswp3523.hzh.sealos.run/getAllResults';
 
         // --- DOM 元素引用 ---
         const currentSpeakerCard = document.getElementById('current-speaker-card'); const currentSpeakerInfo = document.getElementById('current-speaker-info'); const currentProjectName = document.getElementById('current-project-name'); const currentSpeakerName = document.getElementById('current-speaker-name'); const currentCompletedJudges = document.getElementById('current-completed-judges'); const currentTotalJudges = document.getElementById('current-total-judges'); const currentAverageContainer = document.getElementById('current-average-score-container'); const currentAverageScore = document.getElementById('current-average-score'); const currentWaitMessage = document.getElementById('current-wait-message'); const noCurrentSpeaker = document.getElementById('no-current-speaker'); const competitionEnded = document.getElementById('competition-ended'); const resultsList = document.getElementById('results-list'); const noResultsYet = document.getElementById('no-results-yet');
 
         // --- 辅助函数 ---
-        function stopAudiencePolling() { /* ... (代码不变) ... */ if (audiencePollingIntervalId) { console.log("[观众轮询] 停止轮询。"); clearInterval(audiencePollingIntervalId); audiencePollingIntervalId = null; } }
-        function updateCurrentSpeakerUI(speaker, statusData) { /* ... (代码不变) ... */ currentSpeakerCard.classList.remove('hidden'); competitionEnded.classList.add('hidden'); noCurrentSpeaker.classList.add('hidden'); currentSpeakerInfo.classList.remove('hidden'); currentProjectName.textContent = speaker.projectName || '未知项目'; currentSpeakerName.textContent = speaker.speakerName || '未知姓名'; currentTotalJudges.textContent = totalJudgesRequired; const count = statusData?.totalScoresSubmitted ?? '?'; currentCompletedJudges.textContent = count; const avgScore = statusData?.averageScore; if (parseInt(count) >= totalJudgesRequired && avgScore !== null && avgScore !== undefined) { currentAverageContainer.classList.remove('hidden'); currentAverageScore.textContent = avgScore.toFixed(2); currentWaitMessage.classList.add('hidden'); console.log(`[UI更新-当前] 显示项目 ${speaker.projectName} 的最终得分 ${avgScore}`); } else { currentAverageContainer.classList.add('hidden'); currentAverageScore.textContent = '?'; currentWaitMessage.classList.remove('hidden'); console.log(`[UI更新-当前] 项目 ${speaker.projectName} 正在评分或等待计算...`); } }
-        function updatePastResultsUI(results) { /* ... (代码不变) ... */ if (!results || results.length === 0) { noResultsYet.classList.remove('hidden'); resultsList.innerHTML = ''; resultsList.appendChild(noResultsYet); return; } noResultsYet.classList.add('hidden'); resultsList.innerHTML = ''; console.log(`[UI更新-历史] 渲染 ${results.length} 条历史结果。`); results.forEach((result, index) => { const speakerInfo = speakers.find(s => s.projectName === result.projectName); const speakerName = speakerInfo ? speakerInfo.speakerName : '未知姓名'; const resultDiv = document.createElement('div'); resultDiv.className = 'p-3 mb-2 border border-gray-200 rounded bg-gray-50'; resultDiv.innerHTML = `<p class="text-base"><span class="font-medium">${index + 1}. 项目名称:</span> ${result.projectName}</p><p class="text-base mb-1"><span class="font-medium">    演 讲 者:</span> ${speakerName}</p><p class="text-base font-semibold text-blue-600"><span class="font-medium">    最终得分:</span> ${result.finalAverageScore?.toFixed(2) ?? 'N/A'}</p>`; resultsList.appendChild(resultDiv); }); previousResultsCount = results.length; }
+        function stopAudiencePolling() { if (audiencePollingIntervalId) { console.log("[观众轮询] 停止轮询。"); clearInterval(audiencePollingIntervalId); audiencePollingIntervalId = null; } }
+        function updateCurrentSpeakerUI(speaker, statusData) { currentSpeakerCard.classList.remove('hidden'); competitionEnded.classList.add('hidden'); noCurrentSpeaker.classList.add('hidden'); currentSpeakerInfo.classList.remove('hidden'); currentProjectName.textContent = speaker.projectName || '未知项目'; currentSpeakerName.textContent = speaker.speakerName || '未知姓名'; currentTotalJudges.textContent = totalJudgesRequired; const count = statusData?.totalScoresSubmitted ?? '?'; currentCompletedJudges.textContent = count; const avgScore = statusData?.averageScore; if (parseInt(count) >= totalJudgesRequired && avgScore !== null && avgScore !== undefined) { currentAverageContainer.classList.remove('hidden'); currentAverageScore.textContent = avgScore.toFixed(2); currentWaitMessage.classList.add('hidden'); console.log(`[UI更新-当前] 显示项目 ${speaker.projectName} 的最终得分 ${avgScore}`); } else { currentAverageContainer.classList.add('hidden'); currentAverageScore.textContent = '?'; currentWaitMessage.classList.remove('hidden'); console.log(`[UI更新-当前] 项目 ${speaker.projectName} 正在评分或等待计算...`); } }
+        function updatePastResultsUI(results) { if (!results || results.length === 0) { noResultsYet.classList.remove('hidden'); resultsList.innerHTML = ''; resultsList.appendChild(noResultsYet); return; } noResultsYet.classList.add('hidden'); resultsList.innerHTML = ''; console.log(`[UI更新-历史] 渲染 ${results.length} 条历史结果。`); results.forEach((result, index) => { const speakerInfo = speakers.find(s => s.projectName === result.projectName); const speakerName = speakerInfo ? speakerInfo.speakerName : '未知姓名'; const resultDiv = document.createElement('div'); resultDiv.className = 'p-3 mb-2 border border-gray-200 rounded bg-gray-50'; resultDiv.innerHTML = `<p class="text-base"><span class="font-medium">${index + 1}. 项目名称:</span> ${result.projectName}</p><p class="text-base mb-1"><span class="font-medium">    演 讲 者:</span> ${speakerName}</p><p class="text-base font-semibold text-blue-600"><span class="font-medium">    最终得分:</span> ${result.finalAverageScore?.toFixed(2) ?? 'N/A'}</p>`; resultsList.appendChild(resultDiv); }); previousResultsCount = results.length; }
 
         /** 轮询函数 */
         async function pollAudienceData() {
@@ -92,8 +91,7 @@
              try {
                  // 1. 获取最新全局索引
                  console.log("[观众轮询] 获取全局索引...");
-                 // --- 使用 GET 方法获取全局索引 ---
-                 const indexResponse = await fetch(API_GET_CURRENT_INDEX, { method: 'GET' }); // 假设/getCurrentIndex是GET
+                 const indexResponse = await fetch(API_GET_CURRENT_INDEX, { method: 'GET' });
                  if (indexResponse.ok) {
                       const indexData = await indexResponse.json();
                       if (indexData.success) { fetchedGlobalIndex = indexData.currentGlobalIndex; console.log(`[观众轮询] 获取到最新全局索引: ${fetchedGlobalIndex}`); }
@@ -103,19 +101,23 @@
                  // 2. 获取当前演讲者状态 (基于最新获取的全局索引)
                  if (fetchedGlobalIndex < totalSpeakers) {
                       const currentSpeaker = speakers[fetchedGlobalIndex];
-                      console.log(`[观众轮询] 获取索引 ${fetchedGlobalIndex} (${currentSpeaker.projectName}) 的状态...`);
-                      const statusResponse = await fetch(API_GET_STATUS, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ projectName: currentSpeaker.projectName }) });
-                      if (statusResponse.ok) {
-                           const statusData = await statusResponse.json();
-                           if (statusData.success) { currentStatus = statusData; console.log(`[观众轮询] 获取到当前状态: 提交数=${currentStatus.totalScoresSubmitted}, 平均分=${currentStatus.averageScore}`); }
-                           else { console.error("[观众轮询] 获取当前状态失败:", statusData.message); }
-                      } else { console.error(`[观众轮询] 获取当前状态请求失败: ${statusResponse.status}`); }
+                      if (currentSpeaker && currentSpeaker.projectName) { // 确保 currentSpeaker 和 projectName 有效
+                        console.log(`[观众轮询] 获取索引 ${fetchedGlobalIndex} (${currentSpeaker.projectName}) 的状态...`);
+                        const statusResponse = await fetch(API_GET_STATUS, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ projectName: currentSpeaker.projectName }) });
+                        if (statusResponse.ok) {
+                             const statusData = await statusResponse.json();
+                             if (statusData.success) { currentStatus = statusData; console.log(`[观众轮询] 获取到当前状态: 提交数=${currentStatus.totalScoresSubmitted}, 平均分=${currentStatus.averageScore}`); }
+                             else { console.error("[观众轮询] 获取当前状态失败:", statusData.message); }
+                        } else { console.error(`[观众轮询] 获取当前状态请求失败: ${statusResponse.status}`); }
+                      } else {
+                        console.error(`[观众轮询] 错误: 索引 ${fetchedGlobalIndex} 处的演讲者数据无效。`);
+                        // 可以选择停止轮询或跳过此演讲者的状态获取
+                      }
                  } else { console.log("[观众轮询] 全局索引已超出范围，比赛可能已结束。"); }
 
                  // 3. 获取所有历史结果
                  console.log("[观众轮询] 获取所有历史结果...");
-                 // --- 使用 GET 方法获取所有结果 ---
-                 const resultsResponse = await fetch(API_GET_ALL_RESULTS, { method: 'GET' }); // 假设/getAllResults是GET
+                 const resultsResponse = await fetch(API_GET_ALL_RESULTS, { method: 'GET' });
                  if (resultsResponse.ok) {
                       const resultsData = await resultsResponse.json();
                       if (resultsData.success) { allResults = resultsData.results || []; console.log(`[观众轮询] 获取到 ${allResults.length} 条历史结果。`); }
@@ -125,11 +127,17 @@
                  // 4. 更新 UI
                  currentGlobalIndex = fetchedGlobalIndex; // 更新本地全局索引
 
-                 if (currentGlobalIndex < totalSpeakers) { updateCurrentSpeakerUI(speakers[currentGlobalIndex], currentStatus); }
-                 else { /* ... (比赛结束状态处理不变) ... */ currentSpeakerCard.classList.remove('hidden'); currentSpeakerInfo.classList.add('hidden'); noCurrentSpeaker.classList.add('hidden'); competitionEnded.classList.remove('hidden'); stopAudiencePolling(); }
+                 if (currentGlobalIndex < totalSpeakers) {
+                    if(speakers[currentGlobalIndex]){ // 确保演讲者数据存在
+                        updateCurrentSpeakerUI(speakers[currentGlobalIndex], currentStatus);
+                    } else {
+                        console.error(`[观众轮询] UI更新错误: 索引 ${currentGlobalIndex} 处的演讲者数据无效。`);
+                        // 可以显示一个通用错误或“加载中”状态
+                    }
+                 }
+                 else { currentSpeakerCard.classList.remove('hidden'); currentSpeakerInfo.classList.add('hidden'); noCurrentSpeaker.classList.add('hidden'); competitionEnded.classList.remove('hidden'); stopAudiencePolling(); }
 
-                 // 只有当结果数量变化时才重新渲染历史列表
-                 if (allResults.length !== previousResultsCount) { updatePastResultsUI(allResults); }
+                 if (allResults.length !== previousResultsCount || (allResults.length > 0 && resultsList.contains(noResultsYet))) { updatePastResultsUI(allResults); } //如果列表为空或者数量变化则更新
                  else { console.log("[观众轮询] 历史结果数量未变，跳过UI更新。"); }
 
              } catch (error) { console.error("[观众轮询] 轮询过程中发生错误:", error); }
@@ -138,14 +146,13 @@
         // --- 页面初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
             console.log("[观众页] 页面加载完成，开始初始化...");
-            currentTotalJudges.textContent = totalJudgesRequired; // 设置总评委数显示
+            currentTotalJudges.textContent = totalJudgesRequired;
 
             if (!audiencePollingIntervalId) {
                 console.log("[观众页] 启动初始轮询...");
-                pollAudienceData(); // 立即执行一次
+                pollAudienceData();
                 audiencePollingIntervalId = setInterval(pollAudienceData, AUDIENCE_POLLING_INTERVAL_MS);
             }
-            // 显示卡片
             currentSpeakerCard.classList.remove('opacity-0');
             document.querySelector('.results-card').classList.remove('opacity-0');
         });
