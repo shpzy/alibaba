@@ -550,7 +550,9 @@
                                         <div class="video-duration">7:00</div>
                                     </div>
                                 </li>
-                                <li data-video-type="iframe" data-video-src="" data-duration="14:00" data-description="浇注过程以及后续清理工作的工艺流程。"> 
+                                <!-- 修改开始 -->
+                                <li data-video-type="local" data-video-src="video2.1.mp4" data-duration="14:00" data-description="浇注过程以及后续清理工作的工艺流程。"> 
+                                <!-- 修改结束 -->
                                     <i class="fas fa-play-circle video-icon"></i>
                                     <div>
                                         <div class="video-title">浇注与清理工艺</div>
@@ -585,7 +587,7 @@
                                     </div>
                                     <div class="step">
                                         <div class="step-number">2</div>
-                                        <div>点击下方二维码</div>
+                                        <div>点击或用钉钉扫描下方二维码</div>
                                     </div>
                                     <div class="step">
                                         <div class="step-number">3</div>
@@ -692,17 +694,22 @@
                     currentVideoElement = iframe;
                 } else if (videoType === 'local' && videoSrc) { 
                     const video = document.createElement('video');
-                    video.src = videoSrc;
+                    video.src = videoSrc; // 直接设置src
                     video.controls = true;
+                    video.autoplay = true; // 可以尝试自动播放，但浏览器可能有策略限制
                     video.style.width = '100%'; 
                     video.style.height = '100%';
-                    const source = document.createElement('source');
-                    source.src = videoSrc;
-                    source.type = 'video/mp4';
-                    video.appendChild(source);
-                    video.innerHTML += '您的浏览器不支持视频播放。';
+                    // 不需要再创建source标签，因为已经直接给video.src赋值了
+                    // const source = document.createElement('source');
+                    // source.src = videoSrc;
+                    // source.type = 'video/mp4';
+                    // video.appendChild(source);
+                    video.innerHTML += '您的浏览器不支持视频播放。'; // 这句可以作为video标签不支持时的后备内容
                     videoPlayerContainer.appendChild(video);
-                    video.play().catch(error => console.error("Video play failed:", error, "for src:", videoSrc)); 
+                    video.play().catch(error => {
+                        console.error("Video play failed:", error, "for src:", videoSrc);
+                        // 可以添加一些用户提示，比如“自动播放失败，请手动点击播放”
+                    }); 
                     currentVideoElement = video;
                 } else {
                     console.warn("Unsupported video type or missing src for item:", item);
@@ -720,7 +727,14 @@
                 item.addEventListener('click', function() {
                     const globalIndexOfClickedItem = allVideoItems.indexOf(this);
                     if (globalIndexOfClickedItem !== -1) {
-                        loadVideoByIndex(globalIndexOfClickedItem);
+                        const videoSrc = this.getAttribute('data-video-src');
+                        if (videoSrc && videoSrc.trim() !== "") { // 确保有视频源再加载
+                           loadVideoByIndex(globalIndexOfClickedItem);
+                        } else {
+                            console.warn("Video source is empty for item:", this);
+                            // 可以在这里给用户一个提示，比如弹窗告知视频暂缺
+                            alert("该视频暂时无法播放。");
+                        }
                     }
                 });
             });
@@ -744,6 +758,8 @@
                     }
                     nextIndex++;
                 }
+                // 如果没有更多有效视频，则关闭模态框或提示
+                alert("已经是最后一个视频了。");
                 videoModal.style.display = 'none';
                 if (currentVideoElement && typeof currentVideoElement.pause === 'function') {
                     currentVideoElement.pause();
