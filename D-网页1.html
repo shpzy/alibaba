@@ -1,3 +1,4 @@
+      
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -551,7 +552,7 @@
                                     </div>
                                 </li>
                                 <!-- 修改开始 -->
-                                <li data-video-type="local" data-video-src="video2.1.mp4" data-duration="14:00" data-description="浇注过程以及后续清理工作的工艺流程。"> 
+                                <li data-video-type="local" data-video-src="https://cdn.jsdelivr.net/gh/shpzy/alibaba@main/video2.1.mp4" data-duration="14:00" data-description="浇注过程以及后续清理工作的工艺流程。"> 
                                 <!-- 修改结束 -->
                                     <i class="fas fa-play-circle video-icon"></i>
                                     <div>
@@ -699,16 +700,10 @@
                     video.autoplay = true; // 可以尝试自动播放，但浏览器可能有策略限制
                     video.style.width = '100%'; 
                     video.style.height = '100%';
-                    // 不需要再创建source标签，因为已经直接给video.src赋值了
-                    // const source = document.createElement('source');
-                    // source.src = videoSrc;
-                    // source.type = 'video/mp4';
-                    // video.appendChild(source);
-                    video.innerHTML += '您的浏览器不支持视频播放。'; // 这句可以作为video标签不支持时的后备内容
+                    video.innerHTML += '您的浏览器不支持视频播放。'; 
                     videoPlayerContainer.appendChild(video);
                     video.play().catch(error => {
                         console.error("Video play failed:", error, "for src:", videoSrc);
-                        // 可以添加一些用户提示，比如“自动播放失败，请手动点击播放”
                     }); 
                     currentVideoElement = video;
                 } else {
@@ -728,11 +723,10 @@
                     const globalIndexOfClickedItem = allVideoItems.indexOf(this);
                     if (globalIndexOfClickedItem !== -1) {
                         const videoSrc = this.getAttribute('data-video-src');
-                        if (videoSrc && videoSrc.trim() !== "") { // 确保有视频源再加载
+                        if (videoSrc && videoSrc.trim() !== "") { 
                            loadVideoByIndex(globalIndexOfClickedItem);
                         } else {
                             console.warn("Video source is empty for item:", this);
-                            // 可以在这里给用户一个提示，比如弹窗告知视频暂缺
                             alert("该视频暂时无法播放。");
                         }
                     }
@@ -758,7 +752,6 @@
                     }
                     nextIndex++;
                 }
-                // 如果没有更多有效视频，则关闭模态框或提示
                 alert("已经是最后一个视频了。");
                 videoModal.style.display = 'none';
                 if (currentVideoElement && typeof currentVideoElement.pause === 'function') {
@@ -780,3 +773,5 @@
     </script>
 </body>
 </html>
+
+    
