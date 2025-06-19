@@ -316,6 +316,7 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            -webkit-overflow-scrolling: touch; /* 添加iOS滚动回弹效果 */
         }
         
         .modal-content {
@@ -325,12 +326,17 @@
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
         }
         
         .video-container {
             position: relative;
             padding-top: 56.25%; /* 16:9 Aspect Ratio */
             background: #000;
+            width: 100%;
         }
         
         .video-container video {
@@ -339,6 +345,10 @@
             left: 0;
             width: 100%;
             height: 100%;
+            object-fit: contain;
+            background: #000;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .video-info {
@@ -415,11 +425,68 @@
             }
             
             .modal-content {
-                width: 95%;
+                width: 100%;
+                height: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                margin: 0;
             }
             
-            .video-info h3 {
-                font-size: 1.2rem;
+            .video-container {
+                flex: 1;
+                padding-top: 56.25%; /* 保持16:9比例 */
+            }
+            
+            .video-info {
+                padding: 15px;
+                max-height: 30vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .modal-controls {
+                padding: 10px;
+                background: rgba(0, 0, 0, 0.8);
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                display: flex;
+                justify-content: space-between;
+                z-index: 1001;
+            }
+            
+            .close-btn,
+            .next-btn {
+                padding: 12px 20px;
+                font-size: 16px;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+                border: none;
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+            }
+            
+            .video-container video::-webkit-media-controls-fullscreen-button {
+                display: none;
+            }
+            
+            .video-container video::-webkit-media-controls-play-button {
+                background-color: rgba(255, 255, 255, 0.8);
+                border-radius: 50%;
+            }
+            
+            .video-container video::-webkit-media-controls-timeline {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+                height: 4px;
+            }
+            
+            .video-container video::-webkit-media-controls-current-time-display,
+            .video-container video::-webkit-media-controls-time-remaining-display {
+                color: white;
+                text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
             }
         }
     </style>
@@ -603,8 +670,10 @@
     <div class="video-modal" id="videoModal">
         <div class="modal-content">
             <div class="video-container">
-                <video id="mainVideo" controls>
+                <video id="mainVideo" controls playsinline webkit-playsinline preload="metadata">
                     <source src="" type="video/mp4">
+                    <source src="" type="video/webm">
+                    <source src="" type="video/ogg">
                     您的浏览器不支持视频播放。
                 </video>
             </div>
@@ -651,6 +720,24 @@
             
             let currentVideoIndex = 0;
             
+            // 视频错误处理
+            mainVideo.addEventListener('error', function(e) {
+                console.error('视频加载错误:', e);
+                alert('视频加载失败，请检查网络连接或稍后重试');
+            });
+
+            // 确保视频加载完成后再播放
+            mainVideo.addEventListener('loadedmetadata', function() {
+                if (mainVideo.paused) {
+                    const playPromise = mainVideo.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("自动播放被阻止，需要用户交互才能播放");
+                        });
+                    }
+                }
+            });
+            
             // 为每个视频项添加点击事件
             videoItems.forEach((item, index) => {
                 item.addEventListener('click', function() {
@@ -658,19 +745,36 @@
                     const title = this.querySelector('.video-title').textContent;
                     const description = this.getAttribute('data-description');
                     
-                    // 设置视频源
-                    mainVideo.src = videoFile;
+                    // 设置不同格式的视频源
+                    const sources = mainVideo.getElementsByTagName('source');
+                    const videoFormats = {
+                        'mp4': videoFile,
+                        'webm': videoFile.replace('.mp4', '.webm'),
+                        'ogg': videoFile.replace('.mp4', '.ogv')
+                    };
+                    
+                    sources.forEach(source => {
+                        const type = source.type.split('/')[1];
+                        source.src = videoFormats[type] || videoFile;
+                    });
+                    
+                    // 重新加载视频
+                    mainVideo.load();
+                    
                     videoTitle.textContent = title;
                     videoDescription.textContent = description;
-                    
-                    // 设置当前视频索引
                     currentVideoIndex = index;
                     
                     // 显示模态框
                     videoModal.style.display = 'flex';
                     
-                    // 播放视频
-                    mainVideo.play();
+                    // 尝试播放视频
+                    const playPromise = mainVideo.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("需要用户交互才能播放视频");
+                        });
+                    }
                 });
             });
             
@@ -678,6 +782,9 @@
             closeModal.addEventListener('click', function() {
                 videoModal.style.display = 'none';
                 mainVideo.pause();
+                // 重置视频源以释放资源
+                mainVideo.src = '';
+                mainVideo.load();
             });
             
             // 下一个视频
@@ -690,15 +797,39 @@
                     const title = nextItem.querySelector('.video-title').textContent;
                     const description = nextItem.getAttribute('data-description');
                     
-                    mainVideo.src = videoFile;
+                    // 设置不同格式的视频源
+                    const sources = mainVideo.getElementsByTagName('source');
+                    const videoFormats = {
+                        'mp4': videoFile,
+                        'webm': videoFile.replace('.mp4', '.webm'),
+                        'ogg': videoFile.replace('.mp4', '.ogv')
+                    };
+                    
+                    sources.forEach(source => {
+                        const type = source.type.split('/')[1];
+                        source.src = videoFormats[type] || videoFile;
+                    });
+                    
+                    // 重新加载视频
+                    mainVideo.load();
+                    
                     videoTitle.textContent = title;
                     videoDescription.textContent = description;
                     
-                    mainVideo.play();
+                    // 尝试播放视频
+                    const playPromise = mainVideo.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("需要用户交互才能播放视频");
+                        });
+                    }
                 } else {
                     // 如果是最后一个视频，则关闭模态框
                     videoModal.style.display = 'none';
                     mainVideo.pause();
+                    // 重置视频源以释放资源
+                    mainVideo.src = '';
+                    mainVideo.load();
                 }
             });
             
@@ -707,8 +838,70 @@
                 if (e.target === videoModal) {
                     videoModal.style.display = 'none';
                     mainVideo.pause();
+                    // 重置视频源以释放资源
+                    mainVideo.src = '';
+                    mainVideo.load();
                 }
             });
+
+            // 处理移动端的触摸事件
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            videoModal.addEventListener('touchstart', function(e) {
+                touchStartX = e.touches[0].clientX;
+            }, false);
+            
+            videoModal.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].clientX;
+                handleSwipe();
+            }, false);
+            
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                const swipeLength = touchEndX - touchStartX;
+                
+                if (Math.abs(swipeLength) > swipeThreshold) {
+                    if (swipeLength > 0 && currentVideoIndex > 0) {
+                        // 向右滑动，播放上一个视频
+                        currentVideoIndex--;
+                        playVideo(videoItems[currentVideoIndex]);
+                    } else if (swipeLength < 0 && currentVideoIndex < videoItems.length - 1) {
+                        // 向左滑动，播放下一个视频
+                        currentVideoIndex++;
+                        playVideo(videoItems[currentVideoIndex]);
+                    }
+                }
+            }
+            
+            function playVideo(item) {
+                const videoFile = item.getAttribute('data-video');
+                const title = item.querySelector('.video-title').textContent;
+                const description = item.getAttribute('data-description');
+                
+                const sources = mainVideo.getElementsByTagName('source');
+                const videoFormats = {
+                    'mp4': videoFile,
+                    'webm': videoFile.replace('.mp4', '.webm'),
+                    'ogg': videoFile.replace('.mp4', '.ogv')
+                };
+                
+                sources.forEach(source => {
+                    const type = source.type.split('/')[1];
+                    source.src = videoFormats[type] || videoFile;
+                });
+                
+                mainVideo.load();
+                videoTitle.textContent = title;
+                videoDescription.textContent = description;
+                
+                const playPromise = mainVideo.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("需要用户交互才能播放视频");
+                    });
+                }
+            }
         });
     </script>
 </body>
