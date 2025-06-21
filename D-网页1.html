@@ -42,7 +42,7 @@
         header {
             background: linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%);
             color: white;
-            padding: 1.5rem 0;
+            padding: 0.8rem 0;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
@@ -53,16 +53,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.5rem 0;
         }
         
         .logo {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 8px;
         }
         
         .logo-icon {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             color: #ffd43b;
         }
         
@@ -72,46 +73,16 @@
         }
         
         .logo-text h1 {
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            line-height: 1.2;
+            line-height: 1.1;
+            margin: 0;
         }
         
         .logo-text span {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             opacity: 0.9;
             font-weight: 300;
-        }
-        
-        .date-info {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 8px 15px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* 主内容区域 */
-        .hero {
-            padding: 3rem 0;
-            text-align: center;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231a56db" opacity="0.05"/></svg>');
-        }
-        
-        .hero h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--secondary);
-            font-weight: 700;
-        }
-        
-        .hero p {
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto 2rem;
-            color: var(--gray);
         }
         
         .sections-container {
@@ -158,7 +129,7 @@
         }
         
         .card-content {
-            padding: 1.5rem;
+            padding: 1.2rem;
             flex-grow: 1;
             display: flex;
             flex-direction: column;
@@ -166,15 +137,15 @@
         
         .video-list {
             list-style: none;
-            margin-top: 1rem;
+            margin-top: 0.8rem;
         }
         
         .video-list li {
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: flex-start;
-            gap: 12px;
+            gap: 10px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -210,34 +181,22 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
-            gap: 20px;
-        }
-        
-        .dingtalk-logo {
-            width: 80px;
-            height: 80px;
-            background: #1677FF;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2.5rem;
+            gap: 12px;
         }
         
         .dingtalk-steps {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 8px;
         }
         
         .step {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 15px;
+            gap: 8px;
+            padding: 10px 12px;
             background: #f1f8ff;
             border-radius: 8px;
             border-left: 4px solid var(--primary);
@@ -256,53 +215,13 @@
             flex-shrink: 0;
         }
         
-        .action-button {
-            display: inline-block;
-            background: var(--primary);
-            color: white;
-            padding: 12px 25px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 15px;
-            transition: all 0.3s ease;
-            border: 2px solid var(--primary);
-            text-align: center;
-        }
-        
-        .action-button:hover {
-            background: white;
-            color: var(--primary);
-            transform: translateY(-2px);
-        }
-        
-        .action-button i {
-            margin-right: 8px;
-        }
-        
         footer {
             text-align: center;
-            padding: 2rem 0;
+            padding: 1rem 0;
             color: var(--gray);
-            font-size: 0.9rem;
-            margin-top: 3rem;
+            font-size: 0.8rem;
+            margin-top: 1.5rem;
             border-top: 1px solid var(--border);
-        }
-        
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
-        
-        .footer-links a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        
-        .footer-links a:hover {
-            text-decoration: underline;
         }
         
         /* 视频播放器模态框 */
@@ -408,22 +327,41 @@
         
         /* 响应式设计 */
         @media (max-width: 768px) {
+            header {
+                padding: 0.5rem 0;
+            }
+            
             .header-content {
                 flex-direction: column;
-                gap: 15px;
+                gap: 8px;
                 text-align: center;
+                padding: 0.3rem 0;
+            }
+            
+            .logo-icon {
+                font-size: 1.5rem;
+            }
+            
+            .logo-text h1 {
+                font-size: 1.2rem;
+            }
+            
+            .logo-text span {
+                font-size: 0.7rem;
             }
             
             .hero h2 {
-                font-size: 2rem;
+                font-size: 1.6rem;
+                margin-bottom: 0.5rem;
             }
             
             .hero p {
-                font-size: 1rem;
+                font-size: 0.9rem;
             }
             
             .sections-container {
                 grid-template-columns: 1fr;
+                margin-top: 1rem;
             }
             
             .modal-content {
@@ -450,10 +388,6 @@
                         <h1>砂型铸造实训AI辅助平台</h1>
                         <span>哈尔滨理工大学工程训练中心 · 铸造实训课程AI应用</span>
                     </div>
-                </div>
-                <div class="date-info">
-                    <i class="fas fa-calendar-alt"></i>
-                    2025年6月
                 </div>
             </div>
         </div>
@@ -513,10 +447,6 @@
                                     </div>
                                 </li>
                             </ul>
-                            
-                            <a href="#" class="action-button">
-                                <i class="fas fa-play"></i> 开始预习
-                            </a>
                         </div>
                     </div>
                     
@@ -551,9 +481,7 @@
                                         <div class="video-duration">7:00</div>
                                     </div>
                                 </li>
-                                <!-- 修改开始 -->
                                 <li data-video-type="local" data-video-src="https://cdn.jsdelivr.net/gh/shpzy/alibaba@main/video2.1.mp4" data-duration="14:00" data-description="浇注过程以及后续清理工作的工艺流程。"> 
-                                <!-- 修改结束 -->
                                     <i class="fas fa-play-circle video-icon"></i>
                                     <div>
                                         <div class="video-title">浇注与清理工艺</div>
@@ -561,10 +489,6 @@
                                     </div>
                                 </li>
                             </ul>
-                            
-                            <a href="#" class="action-button">
-                                <i class="fas fa-download"></i> 下载演示手册
-                            </a>
                         </div>
                     </div>
                     
@@ -576,9 +500,6 @@
                         </div>
                         <div class="card-content">
                             <div class="dingtalk-section">
-                                <div class="dingtalk-logo">
-                                    <i class="fab fa-dingtalk"></i>
-                                </div>
                                 <p>使用钉钉AI智能体，上传砂型照片即可获得即时评价和改进建议，无需额外安装应用。</p>
                                 
                                 <div class="dingtalk-steps">
@@ -639,11 +560,6 @@
     <!-- 页脚 -->
     <footer>
         <div class="container">
-            <div class="footer-links">
-                <a href="#"><i class="fas fa-info-circle"></i> 关于平台</a>
-                <a href="#"><i class="fas fa-question-circle"></i> 帮助中心</a>
-                <a href="#"><i class="fas fa-envelope"></i> 联系我们</a>
-            </div>
             <p>© 2025 哈尔滨理工大学工程训练中心-铸造实训课程AI应用</p>
             <p>技术支持：DeepSeek大模型 & 钉钉AI平台</p>
         </div>
@@ -773,5 +689,3 @@
     </script>
 </body>
 </html>
-
-    
